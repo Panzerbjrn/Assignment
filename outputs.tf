@@ -1,0 +1,100 @@
+# # Outputs
+
+# output "resource_group_name" {
+#   description = "Name of the resource group"
+#   value       = module.resource_group.name
+# }
+
+# output "resource_group_location" {
+#   description = "Location of the resource group"
+#   value       = module.resource_group.location
+# }
+
+# output "vnet_id" {
+#   description = "ID of the virtual network"
+#   value       = module.networking.vnet_id
+# }
+
+# # App Service outputs - COMMENTED OUT (No App Service deployed)
+# # output "app_service_name" {
+# #   description = "Name of the App Service"
+# #   value       = module.app_service.app_service_name
+# # }
+# #
+# # output "app_service_url" {
+# #   description = "URL of the App Service"
+# #   value       = "https://${module.app_service.app_service_default_hostname}"
+# # }
+
+# # output "app_insights_connection_string" {
+# #   description = "Application Insights connection string"
+# #   value       = module.app_service.app_insights_connection_string
+# #   sensitive   = true
+# # }
+
+# output "sql_server_name" {
+#   description = "Name of the SQL Server"
+#   value       = module.sql_database.sql_server_name
+# }
+
+# output "sql_server_fqdn" {
+#   description = "FQDN of the SQL Server (private endpoint)"
+#   value       = module.sql_database.sql_server_fqdn
+# }
+
+# output "sql_database_name" {
+#   description = "Name of the SQL Database"
+#   value       = module.sql_database.sql_database_name
+# }
+
+# output "cosmos_account_name" {
+#   description = "Name of the Cosmos DB account"
+#   value       = module.cosmos_db.cosmos_account_name
+# }
+
+# output "cosmos_endpoint" {
+#   description = "Endpoint of the Cosmos DB (private endpoint)"
+#   value       = module.cosmos_db.cosmos_endpoint
+# }
+
+# output "cosmos_database_name" {
+#   description = "Name of the Cosmos DB database"
+#   value       = module.cosmos_db.database_name
+# }
+
+# output "log_analytics_workspace_name" {
+#   description = "Name of the Log Analytics Workspace"
+#   value       = module.monitoring.log_analytics_workspace_name
+# }
+
+# # App Insights removed - see commented section above
+
+# output "sql_admin_password" {
+#   description = "SQL Server admin password (store securely)"
+#   value       = random_password.sql_admin.result
+#   sensitive   = true
+# }
+
+# output "cosmos_primary_key" {
+#   description = "Cosmos DB primary key (store securely)"
+#   value       = module.cosmos_db.cosmos_primary_key
+#   sensitive   = true
+# }
+
+# output "deployment_summary" {
+#   description = "Deployment summary with key information"
+#   value = {
+#     environment        = var.environment
+#     location           = var.location
+#     resource_group     = module.resource_group.name
+#     # app_service        = module.app_service.app_service_name  # COMMENTED OUT
+#     app_service        = "Not deployed - no App Service quota"
+#     sql_server         = module.sql_database.sql_server_name
+#     cosmos_account     = module.cosmos_db.cosmos_account_name
+#     compliance_tags    = "PRA-FCA, UK Data Residency"
+#     network_security   = "Private Endpoints, NSGs, VNet Integration"
+#     monitoring_enabled = true
+#     rbac_configured    = true
+#   }
+# }
+
