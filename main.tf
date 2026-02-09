@@ -45,7 +45,7 @@ module "vnet" {
 # Subnets
 # ========================================
 
-# App Service Subnet (with delegation for Web/serverFarms)
+# App Service Subnet
 module "subnet_app" {
   source               = "./modules/subnet"
   name_prefix          = "${var.project_name}-${var.environment}"
