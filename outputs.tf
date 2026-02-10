@@ -10,7 +10,27 @@ output "resource_group_location" {
 
 output "vnet_id" {
   description = "ID of the virtual network"
-  value       = module.networking.vnet_id
+  value       = module.vnet.vnet_id
+}
+
+output "vnet_name" {
+  description = "Name of the virtual network"
+  value       = module.vnet.vnet_name
+}
+
+output "key_vault_name" {
+  description = "Name of the Key Vault"
+  value       = module.key_vault.key_vault_name
+}
+
+output "key_vault_uri" {
+  description = "URI of the Key Vault"
+  value       = module.key_vault.key_vault_uri
+}
+
+output "service_plan_name" {
+  description = "Name of the App Service Plan"
+  value       = module.service_plan.service_plan_name
 }
 
 output "app_service_name" {
@@ -25,7 +45,7 @@ output "app_service_url" {
 
 output "app_insights_connection_string" {
   description = "Application Insights connection string"
-  value       = module.app_service.app_insights_connection_string
+  value       = module.logging.app_insights_connection_string
   sensitive   = true
 }
 
@@ -59,22 +79,15 @@ output "cosmos_database_name" {
   value       = module.cosmos_db.database_name
 }
 
-output "log_analytics_workspace_name" {
-  description = "Name of the Log Analytics Workspace"
-  value       = module.monitoring.log_analytics_workspace_name
-}
-
-
-output "sql_admin_password" {
-  description = "SQL Server admin password (store securely)"
-  value       = random_password.sql_admin.result
-  sensitive   = true
-}
-
 output "cosmos_primary_key" {
   description = "Cosmos DB primary key (store securely)"
   value       = module.cosmos_db.cosmos_primary_key
   sensitive   = true
+}
+
+output "log_analytics_workspace_name" {
+  description = "Name of the Log Analytics Workspace"
+  value       = module.monitoring.log_analytics_workspace_name
 }
 
 output "deployment_summary" {
@@ -83,13 +96,14 @@ output "deployment_summary" {
     environment        = var.environment
     location           = var.location
     resource_group     = module.resource_group.name
+    key_vault          = module.key_vault.key_vault_name
+    service_plan       = module.service_plan.service_plan_name
     app_service        = module.app_service.app_service_name
     sql_server         = module.sql_database.sql_server_name
     cosmos_account     = module.cosmos_db.cosmos_account_name
     compliance_tags    = "PRA-FCA, UK Data Residency"
     network_security   = "Private Endpoints, NSGs, VNet Integration"
     monitoring_enabled = true
-    rbac_configured    = true
+    rbac_configured    = false
   }
 }
-
