@@ -175,7 +175,7 @@ module "dns_zone_keyvault" {
 module "key_vault" {
   source                        = "./modules/key_vault"
   name_prefix                   = local.name_prefix
-  instance_id                   = "05"
+  instance_id                   = "01"
   resource_group_name           = module.resource_group.name
   location                      = module.resource_group.location
   enable_private_endpoint       = true
