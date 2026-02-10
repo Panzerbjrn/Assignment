@@ -5,7 +5,7 @@ project_name = "wsb"
 environment  = "staging"
 location     = "uksouth"
 
-# Tagging
+# Tags
 cost_center   = "WSB-Infrastructure-Staging"
 business_unit = "Technology"
 criticality   = "High"
@@ -17,10 +17,8 @@ tags = {
   Environment = "Staging"
 }
 
-# ========================================
-# Networking
-# ========================================
 
+# Networking
 vnet_address_space = ["10.2.0.0/16"]
 
 # Subnet Configuration
@@ -103,44 +101,34 @@ nsg_db_rules = [
   }
 ]
 
-# ========================================
-# App Service - Standard tier for staging
-# ========================================
 
+# App Service - Standard tier for staging
 app_service_sku        = "S1"
 app_min_instances      = 2
 app_max_instances      = 4
 enable_zone_redundancy = false
 
-# ========================================
-# SQL Database - Production-like tier
-# ========================================
 
+# SQL Database - Production-like tier
 sql_sku_name              = "GP_Gen5_2"
 sql_max_size_gb           = 32
 sql_backup_retention_days = 14
 sql_geo_backup_enabled    = true
 sql_admin_username        = "sqladmin"
 
-# ========================================
-# Cosmos DB - Production-like throughput
-# ========================================
 
+# Cosmos DB - Production-like throughput
 cosmos_failover_location       = "ukwest"
 cosmos_consistency_level       = "Session"
 cosmos_max_throughput          = 4000
 cosmos_backup_interval_minutes = 480
 cosmos_backup_retention_hours  = 336
 
-# ========================================
-# Monitoring
-# ========================================
 
+# Monitoring
 alert_email = "devops-staging@centralindustrial.eu"
 
-# ========================================
-# Azure AD / RBAC (uncomment when Azure AD domain is available)
-# ========================================
 
-# azure_ad_domain_name = "yourtenant.onmicrosoft.com"
+# Azure AD / RBAC - commented out as no AD domain currently available for testing.
+# azure_ad_domain_name = "CentralIndustrial.eu"
 # create_test_users    = true
