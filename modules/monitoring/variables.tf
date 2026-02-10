@@ -57,6 +57,18 @@ variable "cosmos_account_id" {
   default     = ""
 }
 
+variable "enable_keyvault_alerts" {
+  description = "Whether to create Key Vault access anomaly alerts"
+  type        = bool
+  default     = false
+}
+
+variable "key_vault_id" {
+  description = "Key Vault ID for monitoring. Required when enable_keyvault_alerts is true."
+  type        = string
+  default     = ""
+}
+
 variable "alert_email" {
   description = "Email address for alert notifications"
   type        = string

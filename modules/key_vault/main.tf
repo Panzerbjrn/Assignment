@@ -82,6 +82,27 @@ resource "azurerm_key_vault_secret" "static_secrets" {
   depends_on = [azurerm_key_vault_access_policy.terraform]
 }
 
+# Diagnostic Settings - send audit logs to Log Analytics for anomaly detection
+resource "azurerm_monitor_diagnostic_setting" "kv_diagnostics" {
+  count                      = var.log_analytics_workspace_id != "" ? 1 : 0
+  name                       = join("-", [local.name_prefix, local.instance_id, "kv", "diag"])
+  target_resource_id         = azurerm_key_vault.kv.id
+  log_analytics_workspace_id = var.log_analytics_workspace_id
+
+  enabled_log {
+    category = "AuditEvent"
+  }
+
+  enabled_log {
+    category = "AzurePolicyEvaluationDetails"
+  }
+
+  metric {
+    category = "AllMetrics"
+    enabled  = true
+  }
+}
+
 # Private Endpoint for Key Vault
 resource "azurerm_private_endpoint" "kv" {
   count               = var.enable_private_endpoint ? 1 : 0

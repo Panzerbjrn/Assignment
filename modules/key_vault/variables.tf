@@ -101,6 +101,12 @@ variable "static_secrets" {
   default = {}
 }
 
+variable "log_analytics_workspace_id" {
+  description = "Log Analytics Workspace ID for diagnostic settings (empty = no diagnostics)"
+  type        = string
+  default     = ""
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)

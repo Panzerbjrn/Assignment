@@ -224,6 +224,203 @@ resource "azurerm_monitor_metric_alert" "cosmos_latency" {
   }
 }
 
+# ========================================
+# Key Vault Access Anomaly Alerts
+# ========================================
+
+# Alert: Failed Key Vault access attempts (potential unauthorized access)
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "kv_failed_access" {
+  count               = var.enable_keyvault_alerts ? 1 : 0
+  name                = join("-", [local.name_prefix, local.instance_id, "kvfail", "sqr"])
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  description         = "Alert when Key Vault access attempts fail repeatedly (potential unauthorized access)"
+  severity            = 1
+  enabled             = true
+  tags                = var.tags
+
+  scopes                    = [azurerm_log_analytics_workspace.law.id]
+  evaluation_frequency      = "PT5M"
+  window_duration           = "PT15M"
+  target_resource_types     = ["Microsoft.OperationalInsights/workspaces"]
+  auto_mitigation_enabled   = true
+  workspace_alerts_storage_enabled = false
+
+  criteria {
+    query = <<-QUERY
+      AzureDiagnostics
+      | where ResourceProvider == "MICROSOFT.KEYVAULT"
+      | where ResultSignature == "Forbidden" or ResultSignature == "Unauthorized" or httpStatusCode_d >= 400
+      | summarize FailedAttempts = count() by CallerIPAddress, OperationName, bin(TimeGenerated, 5m)
+      | where FailedAttempts >= 5
+    QUERY
+
+    time_aggregation_method = "Count"
+    operator                = "GreaterThan"
+    threshold               = 0
+
+    failing_periods {
+      minimum_failing_periods_to_trigger_alert = 1
+      number_of_evaluation_periods             = 1
+    }
+  }
+
+  action {
+    action_groups = [azurerm_monitor_action_group.alerts.id]
+  }
+}
+
+# Alert: Key Vault secret listing (potential enumeration/reconnaissance)
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "kv_secret_enumeration" {
+  count               = var.enable_keyvault_alerts ? 1 : 0
+  name                = join("-", [local.name_prefix, local.instance_id, "kvenum", "sqr"])
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  description         = "Alert when someone lists all secrets in Key Vault (potential reconnaissance)"
+  severity            = 2
+  enabled             = true
+  tags                = var.tags
+
+  scopes                    = [azurerm_log_analytics_workspace.law.id]
+  evaluation_frequency      = "PT5M"
+  window_duration           = "PT15M"
+  target_resource_types     = ["Microsoft.OperationalInsights/workspaces"]
+  auto_mitigation_enabled   = true
+  workspace_alerts_storage_enabled = false
+
+  criteria {
+    query = <<-QUERY
+      AzureDiagnostics
+      | where ResourceProvider == "MICROSOFT.KEYVAULT"
+      | where OperationName == "SecretList" or OperationName == "KeyList" or OperationName == "CertificateList"
+      | summarize ListOperations = count() by CallerIPAddress, identity_claim_upn_s, bin(TimeGenerated, 15m)
+      | where ListOperations >= 3
+    QUERY
+
+    time_aggregation_method = "Count"
+    operator                = "GreaterThan"
+    threshold               = 0
+
+    failing_periods {
+      minimum_failing_periods_to_trigger_alert = 1
+      number_of_evaluation_periods             = 1
+    }
+  }
+
+  action {
+    action_groups = [azurerm_monitor_action_group.alerts.id]
+  }
+}
+
+# Alert: Key Vault access outside business hours (potential compromise)
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "kv_off_hours_access" {
+  count               = var.enable_keyvault_alerts ? 1 : 0
+  name                = join("-", [local.name_prefix, local.instance_id, "kvooh", "sqr"])
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  description         = "Alert on Key Vault secret access outside business hours (weekdays 07:00-19:00 UTC)"
+  severity            = 2
+  enabled             = true
+  tags                = var.tags
+
+  scopes                    = [azurerm_log_analytics_workspace.law.id]
+  evaluation_frequency      = "PT15M"
+  window_duration           = "PT30M"
+  target_resource_types     = ["Microsoft.OperationalInsights/workspaces"]
+  auto_mitigation_enabled   = true
+  workspace_alerts_storage_enabled = false
+
+  criteria {
+    query = <<-QUERY
+      AzureDiagnostics
+      | where ResourceProvider == "MICROSOFT.KEYVAULT"
+      | where OperationName == "SecretGet" or OperationName == "SecretSet" or OperationName == "SecretDelete"
+      | where ResultSignature == "OK" or httpStatusCode_d == 200
+      | extend HourOfDay = hourofday(TimeGenerated), DayOfWeek = dayofweek(TimeGenerated)
+      | where HourOfDay < 7 or HourOfDay >= 19 or DayOfWeek == 0d or DayOfWeek == 6d
+      | summarize OffHoursAccess = count() by CallerIPAddress, OperationName, bin(TimeGenerated, 30m)
+    QUERY
+
+    time_aggregation_method = "Count"
+    operator                = "GreaterThan"
+    threshold               = 0
+
+    failing_periods {
+      minimum_failing_periods_to_trigger_alert = 1
+      number_of_evaluation_periods             = 1
+    }
+  }
+
+  action {
+    action_groups = [azurerm_monitor_action_group.alerts.id]
+  }
+}
+
+# Alert: Key Vault secrets deleted or purged (potential sabotage)
+resource "azurerm_monitor_scheduled_query_rules_alert_v2" "kv_secret_deletion" {
+  count               = var.enable_keyvault_alerts ? 1 : 0
+  name                = join("-", [local.name_prefix, local.instance_id, "kvdel", "sqr"])
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  description         = "Alert when secrets are deleted or purged from Key Vault"
+  severity            = 0
+  enabled             = true
+  tags                = var.tags
+
+  scopes                    = [azurerm_log_analytics_workspace.law.id]
+  evaluation_frequency      = "PT5M"
+  window_duration           = "PT5M"
+  target_resource_types     = ["Microsoft.OperationalInsights/workspaces"]
+  auto_mitigation_enabled   = true
+  workspace_alerts_storage_enabled = false
+
+  criteria {
+    query = <<-QUERY
+      AzureDiagnostics
+      | where ResourceProvider == "MICROSOFT.KEYVAULT"
+      | where OperationName in ("SecretDelete", "SecretPurge", "KeyDelete", "KeyPurge", "CertificateDelete", "CertificatePurge")
+      | project TimeGenerated, OperationName, CallerIPAddress, identity_claim_upn_s, ResultSignature
+    QUERY
+
+    time_aggregation_method = "Count"
+    operator                = "GreaterThan"
+    threshold               = 0
+
+    failing_periods {
+      minimum_failing_periods_to_trigger_alert = 1
+      number_of_evaluation_periods             = 1
+    }
+  }
+
+  action {
+    action_groups = [azurerm_monitor_action_group.alerts.id]
+  }
+}
+
+# ========================================
+# Deployment Failure Alert
+# ========================================
+
+# Activity Log Alert for deployment failures
+resource "azurerm_monitor_activity_log_alert" "deployment_failures" {
+  name                = join("-", [local.name_prefix, local.instance_id, "deploy", "ala"])
+  resource_group_name = var.resource_group_name
+  scopes              = ["/subscriptions/${data.azurerm_client_config.current.subscription_id}"]
+  description         = "Alert when a resource deployment fails"
+  location            = "global"
+  tags                = var.tags
+
+  criteria {
+    category       = "Administrative"
+    operation_name = "Microsoft.Resources/deployments/write"
+    status         = "Failed"
+  }
+
+  action {
+    action_group_id = azurerm_monitor_action_group.alerts.id
+  }
+}
+
 # Activity Log Alert for Security Events
 resource "azurerm_monitor_activity_log_alert" "security_events" {
   name                = join("-", [local.name_prefix, local.instance_id, "sec", "ala"])

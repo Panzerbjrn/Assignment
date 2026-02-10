@@ -23,7 +23,7 @@ resource "azurerm_linux_web_app" "app" {
     http2_enabled                     = true
     minimum_tls_version               = "1.2"
     scm_minimum_tls_version           = "1.2"
-    vnet_route_all_enabled            = var.enable_vnet_integration
+    vnet_route_all_enabled            = var.app_subnet_id != ""
     health_check_path                 = var.health_check_path
     health_check_eviction_time_in_min = var.health_check_path != null && var.health_check_path != "" ? 2 : null
 
@@ -40,7 +40,7 @@ resource "azurerm_linux_web_app" "app" {
     }
 
     dynamic "ip_restriction" {
-      for_each = var.enable_vnet_integration ? [1] : []
+      for_each = var.app_subnet_id != "" ? [1] : []
       content {
         action                    = "Allow"
         name                      = "AllowVNetTraffic"
@@ -57,7 +57,7 @@ resource "azurerm_linux_web_app" "app" {
       "APPLICATIONINSIGHTS_CONNECTION_STRING"      = var.app_insights_connection_string
       "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
     } : {},
-    var.enable_vnet_integration ? {
+    var.app_subnet_id != "" ? {
       "WEBSITE_DNS_SERVER"              = "168.63.129.16"
       "WEBSITE_VNET_ROUTE_ALL"          = "1"
       "WEBSITE_ENABLE_SYNC_UPDATE_SITE" = "true"
@@ -67,7 +67,7 @@ resource "azurerm_linux_web_app" "app" {
 
 # VNet Integration
 resource "azurerm_app_service_virtual_network_swift_connection" "vnet_integration" {
-  count          = var.enable_vnet_integration ? 1 : 0
+  count          = var.app_subnet_id != "" ? 1 : 0
   app_service_id = azurerm_linux_web_app.app.id
   subnet_id      = var.app_subnet_id
 }
