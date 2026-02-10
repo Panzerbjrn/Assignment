@@ -32,6 +32,12 @@ variable "app_subnet_id" {
   default     = ""
 }
 
+variable "enable_vnet_integration" {
+  description = "Whether to enable VNet integration. Controls resource count which must be known at plan time."
+  type        = bool
+  default     = false
+}
+
 variable "https_only" {
   description = "Require HTTPS for app service"
   type        = bool

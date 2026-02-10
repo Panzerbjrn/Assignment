@@ -104,7 +104,6 @@ The infrastructure deploys:
 │
 └── docs/
     ├── TERRAFORM_DEPLOYMENT.md
-    ├── BICEP_DEPLOYMENT.md
     ├── OPERATIONS_GUIDE.md
     └── COMPLIANCE_GUIDE.md
 ```

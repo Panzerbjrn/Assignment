@@ -67,7 +67,7 @@ resource "azurerm_linux_web_app" "app" {
 
 # VNet Integration
 resource "azurerm_app_service_virtual_network_swift_connection" "vnet_integration" {
-  count          = var.app_subnet_id != "" ? 1 : 0
+  count          = var.enable_vnet_integration ? 1 : 0
   app_service_id = azurerm_linux_web_app.app.id
   subnet_id      = var.app_subnet_id
 }
