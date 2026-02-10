@@ -1,5 +1,3 @@
-# Variables for UK FSI Infrastructure
-
 variable "project_name" {
   description = "Project name used for resource naming"
   type        = string
@@ -23,15 +21,15 @@ variable "location" {
   type        = string
   default     = "uksouth"
   validation {
-    condition     = contains(["uksouth", "ukwest"], var.location)
-    error_message = "Location must be uksouth or ukwest for UK data residency compliance."
+    condition     = contains(["uksouth", "ukwest", "uknorth"], var.location)
+    error_message = "Location must be uksouth, ukwest, or uknorth for UK data residency compliance."
   }
 }
 
 variable "cost_center" {
   description = "Cost center for billing"
   type        = string
-  default     = "FSI-Infrastructure"
+  default     = "Infrastructure"
 }
 
 variable "business_unit" {
@@ -55,10 +53,6 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
-
-# ========================================
-# Networking Variables
-# ========================================
 
 variable "vnet_address_space" {
   description = "Address space for VNet"
@@ -89,10 +83,6 @@ variable "subnet_db_service_endpoints" {
   type        = list(string)
   default     = ["Microsoft.Sql", "Microsoft.AzureCosmosDB"]
 }
-
-# ========================================
-# NSG Rules
-# ========================================
 
 variable "nsg_app_rules" {
   description = "Security rules for the App Service NSG"
@@ -126,10 +116,6 @@ variable "nsg_db_rules" {
   default = []
 }
 
-# ========================================
-# App Service Variables
-# ========================================
-
 variable "app_service_sku" {
   description = "SKU for App Service Plan"
   type        = string
@@ -160,10 +146,6 @@ variable "enable_autoscaling" {
   default     = false
 }
 
-# ========================================
-# Key Vault Variables
-# ========================================
-
 variable "key_vault_network_action" {
   description = "Default network access action for Key Vault (Allow or Deny)"
   type        = string
@@ -179,10 +161,6 @@ variable "key_vault_allowed_ips" {
   type        = list(string)
   default     = []
 }
-
-# ========================================
-# SQL Database Variables
-# ========================================
 
 variable "sql_sku_name" {
   description = "SKU for SQL Database"
@@ -215,10 +193,6 @@ variable "sql_admin_username" {
   sensitive   = true
 }
 
-# ========================================
-# Cosmos DB Variables
-# ========================================
-
 variable "cosmos_failover_location" {
   description = "Failover location for Cosmos DB"
   type        = string
@@ -249,21 +223,16 @@ variable "cosmos_backup_retention_hours" {
   default     = 720
 }
 
-# ========================================
-# Monitoring Variables
-# ========================================
 
+# Monitoring Variables
 variable "alert_email" {
   description = "Email address for alert notifications"
   type        = string
 }
 
-# ========================================
-# Azure AD / RBAC Variables (uncomment when Azure AD is available)
-# ========================================
-
+# Azure AD / RBAC Variables (uncomment when AAD is available)
 # variable "azure_ad_domain_name" {
-#   description = "Azure AD tenant domain name for user principal names (e.g. yourtenant.onmicrosoft.com)"
+#   description = "Azure AD tenant domain"
 #   type        = string
 # }
 

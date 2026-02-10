@@ -19,10 +19,8 @@ locals {
   )
 }
 
-# ========================================
-# Resource Group
-# ========================================
 
+# Resource Group
 module "resource_group" {
   source      = "./modules/resource_group"
   name_prefix = local.name_prefix
@@ -31,10 +29,8 @@ module "resource_group" {
   tags        = local.common_tags
 }
 
-# ========================================
-# Networking
-# ========================================
 
+### Networking
 # Virtual Network
 module "vnet" {
   source              = "./modules/vnet"
@@ -48,10 +44,8 @@ module "vnet" {
   depends_on = [module.resource_group]
 }
 
-# ========================================
-# Subnets
-# ========================================
 
+## Subnets
 # App Service Subnet (with delegation for Web/serverFarms)
 module "subnet_app" {
   source               = "./modules/subnet"
@@ -98,10 +92,8 @@ module "subnet_db" {
   depends_on = [module.vnet]
 }
 
-# ========================================
-# Network Security Groups
-# ========================================
 
+## Network Security Groups
 # NSG for App Service Subnet
 module "nsg_app" {
   source              = "./modules/nsg"
@@ -134,10 +126,8 @@ module "nsg_db" {
   depends_on = [module.subnet_db]
 }
 
-# ========================================
-# Private DNS Zones
-# ========================================
 
+## Private DNS Zones
 # SQL Private DNS Zone
 module "dns_zone_sql" {
   source              = "./modules/dns_zone"
@@ -180,10 +170,8 @@ module "dns_zone_keyvault" {
   depends_on = [module.vnet]
 }
 
-# ========================================
-# Key Vault
-# ========================================
 
+# Key Vault
 module "key_vault" {
   source                        = "./modules/key_vault"
   name_prefix                   = local.name_prefix
@@ -213,10 +201,8 @@ module "key_vault" {
   depends_on = [module.vnet, module.subnet_pe, module.dns_zone_keyvault]
 }
 
-# ========================================
-# Service Plan
-# ========================================
 
+# Service Plan
 module "service_plan" {
   source              = "./modules/service_plan"
   name_prefix         = local.name_prefix
@@ -233,10 +219,8 @@ module "service_plan" {
   depends_on = [module.resource_group]
 }
 
-# ========================================
-# Logging
-# ========================================
 
+# Logging
 module "logging" {
   source                     = "./modules/logging"
   name_prefix                = local.name_prefix
@@ -251,10 +235,8 @@ module "logging" {
   depends_on = [module.resource_group]
 }
 
-# ========================================
-# App Service
-# ========================================
 
+# App Service
 module "app_service" {
   source              = "./modules/app_service"
   name_prefix         = local.name_prefix
@@ -269,16 +251,14 @@ module "app_service" {
   }
   app_insights_instrumentation_key = module.logging.app_insights_instrumentation_key
   app_insights_connection_string   = module.logging.app_insights_connection_string
-  #  app_subnet_id       = module.subnet_app.subnet_id
-  tags = local.common_tags
+  app_subnet_id                    = module.subnet_app.subnet_id
+  tags                             = local.common_tags
 
   depends_on = [module.vnet, module.service_plan]
 }
 
-# ========================================
-# SQL Database
-# ========================================
 
+# SQL Database
 module "sql_database" {
   source                     = "./modules/sql_database"
   name_prefix                = local.name_prefix
@@ -299,10 +279,8 @@ module "sql_database" {
   depends_on = [module.vnet, module.subnet_pe, module.dns_zone_sql, module.key_vault]
 }
 
-# ========================================
-# Cosmos DB
-# ========================================
 
+# Cosmos DB
 module "cosmos_db" {
   source                     = "./modules/cosmos_db"
   name_prefix                = local.name_prefix
@@ -321,10 +299,8 @@ module "cosmos_db" {
   depends_on = [module.vnet, module.subnet_pe, module.dns_zone_cosmos]
 }
 
-# ========================================
-# Monitoring
-# ========================================
 
+# Monitoring
 module "monitoring" {
   source                    = "./modules/monitoring"
   name_prefix               = local.name_prefix
@@ -348,10 +324,8 @@ module "monitoring" {
   ]
 }
 
-# ========================================
-# Azure AD - Test Groups and Users (requires Azure AD domain)
-# ========================================
 
+# Azure AD - Test Groups and Users (requires AAD domain)
 # module "azure_ad" {
 #   source            = "./modules/azure_ad"
 #   name_prefix       = local.name_prefix
@@ -361,10 +335,8 @@ module "monitoring" {
 #   create_test_users = var.create_test_users
 # }
 
-# ========================================
-# RBAC (requires Azure AD groups)
-# ========================================
 
+# RBAC (requires AAD groups)
 # module "rbac" {
 #   source                            = "./modules/rbac"
 #   name_prefix                       = local.name_prefix

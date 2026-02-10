@@ -41,6 +41,7 @@ provider "azurerm" {
       purge_soft_deleted_certificates_on_destroy = false
     }
 
+    ## This should probably be uncommented in production to prevent accidental deletion of SQL Servers with databases
     # sql_server {
     #   prevent_deletion_if_contains_resources = true
     # }
