@@ -6,9 +6,9 @@ locals {
   domain_name = var.domain_name
 }
 
-
+# ========================================
 # Azure AD Groups
-
+# ========================================
 
 resource "azuread_group" "developers" {
   display_name     = join("-", [local.name_prefix, local.instance_id, "developers"])
@@ -34,9 +34,9 @@ resource "azuread_group" "auditors" {
   security_enabled = true
 }
 
-
+# ========================================
 # Azure AD Test Users
-
+# ========================================
 
 resource "azuread_user" "test_developer" {
   count               = var.create_test_users ? 1 : 0
@@ -78,9 +78,9 @@ resource "azuread_user" "test_auditor" {
   job_title           = "Auditor"
 }
 
-
+# ========================================
 # Group Memberships
-
+# ========================================
 
 resource "azuread_group_member" "developer" {
   count            = var.create_test_users ? 1 : 0

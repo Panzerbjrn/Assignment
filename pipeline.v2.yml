@@ -1,0 +1,83 @@
+name: "Azure DevOps - Terraform Using CLI"
+
+# resources:
+#   repositories:
+#   - repository: TerraformModularity
+#     type: github
+#     endpoint: Panzerbjrn
+#     name: Panzerbjrn/TerraformModularity
+#     ref: main
+
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+- group: GlobalVariables
+- name: ENVIRONMENT_NAME
+  value: "ado"
+- name: TF_VAR_resource_group_name
+  value: $(TF_BACKEND_RG_NAME)
+- name: TF_VAR_storage_account_name
+  value: $(TF_BACKEND_SA_NAME)
+- name: TF_VAR_container_name
+  value: $(TF_BACKEND_CONTAINER_NAME)
+- name: TF_VAR_SP_OID
+  value: $(SP_OID)
+
+stages:
+- stage: Stage1
+  displayName: "Stage 1"
+  jobs:
+  - job: 'Terraform'
+    steps:
+    - bash: |
+        echo $TF_VAR_SP_OID
+        echo $ENVIRONMENT_NAME
+      displayName: Variables
+    - bash: |
+        wget -qO - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/terraform-archive-keyring.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/terraform-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/terraform.list
+        sudo apt update
+        sudo apt install -y terraform
+        terraform --version
+      displayName: Terraform Install
+    - bash: |
+        terraform version
+      displayName: Terraform Version
+    - bash: |
+        terraform init \
+          -input=false \
+          -backend-config="resource_group_name=$(TF_BACKEND_RG_NAME)" \
+          -backend-config="storage_account_name=$(TF_BACKEND_SA_NAME)" \
+          -backend-config="container_name=$(TF_BACKEND_CONTAINER_NAME)" \
+          -backend-config="key=AzureDevOpsTFCLI.tfstate"
+      displayName: Terraform Init
+      env:
+        ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+        ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+        ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+        ARM_TENANT_ID: $(ARM_TENANT_ID)
+    - bash: |
+        terraform plan \
+          -input=false \
+          -var-file="environments/dev/terraform.tfvars" \
+          -out=AzureDevOpsCLI.tfplan
+      displayName: Terraform Plan
+      env:
+        ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+        ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+        ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+        ARM_TENANT_ID: $(ARM_TENANT_ID)
+    - bash: |
+        terraform apply AzureDevOpsCLI.tfplan
+      displayName: Terraform Apply
+      env:
+        ARM_SUBSCRIPTION_ID: $(ARM_SUBSCRIPTION_ID)
+        ARM_CLIENT_ID: $(ARM_CLIENT_ID)
+        ARM_CLIENT_SECRET: $(ARM_CLIENT_SECRET)
+        ARM_TENANT_ID: $(ARM_TENANT_ID)

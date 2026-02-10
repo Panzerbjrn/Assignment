@@ -25,9 +25,7 @@ variables:
   stateContainer: 'tfstate'
 
 stages:
-  # ============================================================
   # VALIDATE (runs on all PRs and pushes)
-  # ============================================================
   - stage: Validate
     displayName: 'Validate Terraform'
     jobs:
@@ -64,9 +62,7 @@ stages:
               command: 'validate'
               workingDirectory: '$(workingDirectory)'
 
-  # ============================================================
-  # DEV
-  # ============================================================
+  # DEV Stage
   - stage: PlanDev
     displayName: 'Plan - Dev'
     dependsOn: Validate
@@ -149,9 +145,8 @@ stages:
                     commandOptions: '-var-file=environments/dev/terraform.tfvars -auto-approve'
                     environmentServiceNameAzureRM: '$(serviceConnection)'
 
-  # ============================================================
-  # STAGING
-  # ============================================================
+
+  # STAGING  Stage
   - stage: PlanStaging
     displayName: 'Plan - Staging'
     dependsOn: ApplyDev
@@ -234,9 +229,8 @@ stages:
                     commandOptions: '-var-file=environments/staging/terraform.tfvars -auto-approve'
                     environmentServiceNameAzureRM: '$(serviceConnection)'
 
-  # ============================================================
-  # PRODUCTION (requires manual approval on the environment)
-  # ============================================================
+
+  # PRODUCTION  Stage - requires manual approval on the environment
   - stage: PlanProd
     displayName: 'Plan - Production'
     dependsOn: ApplyStaging
