@@ -56,14 +56,80 @@ variable "tags" {
   default     = {}
 }
 
+# ========================================
 # Networking Variables
+# ========================================
+
 variable "vnet_address_space" {
   description = "Address space for VNet"
   type        = list(string)
   default     = ["10.0.0.0/16"]
 }
 
+variable "subnet_app_address_prefix" {
+  description = "Address prefix for the App Service subnet"
+  type        = string
+  default     = "10.0.1.0/24"
+}
+
+variable "subnet_pe_address_prefix" {
+  description = "Address prefix for the Private Endpoint subnet"
+  type        = string
+  default     = "10.0.2.0/24"
+}
+
+variable "subnet_db_address_prefix" {
+  description = "Address prefix for the Database subnet"
+  type        = string
+  default     = "10.0.3.0/24"
+}
+
+variable "subnet_db_service_endpoints" {
+  description = "Service endpoints for the Database subnet"
+  type        = list(string)
+  default     = ["Microsoft.Sql", "Microsoft.AzureCosmosDB"]
+}
+
+# ========================================
+# NSG Rules
+# ========================================
+
+variable "nsg_app_rules" {
+  description = "Security rules for the App Service NSG"
+  type = list(object({
+    name                       = string
+    priority                   = number
+    direction                  = string
+    access                     = string
+    protocol                   = string
+    source_port_range          = string
+    destination_port_range     = string
+    source_address_prefix      = string
+    destination_address_prefix = string
+  }))
+  default = []
+}
+
+variable "nsg_db_rules" {
+  description = "Security rules for the Database NSG"
+  type = list(object({
+    name                       = string
+    priority                   = number
+    direction                  = string
+    access                     = string
+    protocol                   = string
+    source_port_range          = string
+    destination_port_range     = string
+    source_address_prefix      = string
+    destination_address_prefix = string
+  }))
+  default = []
+}
+
+# ========================================
 # App Service Variables
+# ========================================
+
 variable "app_service_sku" {
   description = "SKU for App Service Plan"
   type        = string
@@ -94,7 +160,10 @@ variable "enable_autoscaling" {
   default     = false
 }
 
+# ========================================
 # Key Vault Variables
+# ========================================
+
 variable "key_vault_network_action" {
   description = "Default network access action for Key Vault (Allow or Deny)"
   type        = string
@@ -111,7 +180,10 @@ variable "key_vault_allowed_ips" {
   default     = []
 }
 
+# ========================================
 # SQL Database Variables
+# ========================================
+
 variable "sql_sku_name" {
   description = "SKU for SQL Database"
   type        = string
@@ -143,7 +215,10 @@ variable "sql_admin_username" {
   sensitive   = true
 }
 
+# ========================================
 # Cosmos DB Variables
+# ========================================
+
 variable "cosmos_failover_location" {
   description = "Failover location for Cosmos DB"
   type        = string
@@ -174,34 +249,26 @@ variable "cosmos_backup_retention_hours" {
   default     = 720
 }
 
+# ========================================
 # Monitoring Variables
+# ========================================
+
 variable "alert_email" {
   description = "Email address for alert notifications"
   type        = string
 }
 
-# RBAC Variables
-variable "developer_group_id" {
-  description = "Azure AD group ID for developers"
-  type        = string
-  default     = null
-}
+# ========================================
+# Azure AD / RBAC Variables (uncomment when Azure AD is available)
+# ========================================
 
-variable "dba_group_id" {
-  description = "Azure AD group ID for DBAs"
-  type        = string
-  default     = null
-}
+# variable "azure_ad_domain_name" {
+#   description = "Azure AD tenant domain name for user principal names (e.g. yourtenant.onmicrosoft.com)"
+#   type        = string
+# }
 
-variable "operations_group_id" {
-  description = "Azure AD group ID for operations team"
-  type        = string
-  default     = null
-}
-
-variable "auditor_group_id" {
-  description = "Azure AD group ID for auditors"
-  type        = string
-  default     = null
-}
-
+# variable "create_test_users" {
+#   description = "Whether to create test Azure AD users and add them to the groups"
+#   type        = bool
+#   default     = true
+# }

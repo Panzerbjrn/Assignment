@@ -5,6 +5,12 @@ variable "name_prefix" {
   type        = string
 }
 
+variable "instance_id" {
+  description = "Instance identifier used in resource naming"
+  type        = string
+  default     = "01"
+}
+
 variable "resource_group_name" {
   description = "Name of the resource group"
   type        = string
@@ -39,10 +45,16 @@ variable "sql_database_id" {
   default     = null
 }
 
+variable "enable_cosmos_alerts" {
+  description = "Whether to create Cosmos DB metric alerts"
+  type        = bool
+  default     = false
+}
+
 variable "cosmos_account_id" {
-  description = "Cosmos DB Account ID for monitoring"
+  description = "Cosmos DB Account ID for monitoring. Required when enable_cosmos_alerts is true."
   type        = string
-  default     = null
+  default     = ""
 }
 
 variable "alert_email" {

@@ -1,8 +1,13 @@
-# Azure SQL Database Module Variables
+# Azure SQL Database Module
+
+locals {
+  name_prefix = var.name_prefix
+  instance_id = var.instance_id
+}
 
 # SQL Server
 resource "azurerm_mssql_server" "sql_server" {
-  name                          = "${var.name_prefix}-sqlserver"
+  name                          = join("-", [local.name_prefix, local.instance_id, "sql"])
   resource_group_name           = var.resource_group_name
   location                      = var.location
   version                       = "12.0"
@@ -26,7 +31,7 @@ data "azurerm_client_config" "current" {}
 
 # SQL Database
 resource "azurerm_mssql_database" "sql_db" {
-  name                 = "${var.name_prefix}-sqldb"
+  name                 = join("-", [local.name_prefix, local.instance_id, "sqldb"])
   server_id            = azurerm_mssql_server.sql_server.id
   sku_name             = var.sku_name
   max_size_gb          = var.max_size_gb
@@ -83,7 +88,7 @@ resource "azurerm_mssql_server_vulnerability_assessment" "sql_vulnerability" {
 
 # Storage Account for SQL Auditing
 resource "azurerm_storage_account" "sql_audit_storage" {
-  name                            = replace("${var.name_prefix}sqlaudit", "-", "")
+  name                            = replace(join("", [local.name_prefix, local.instance_id, "sqlst"]), "-", "")
   resource_group_name             = var.resource_group_name
   location                        = var.location
   account_tier                    = "Standard"
@@ -102,14 +107,14 @@ resource "azurerm_storage_container" "sql_audit_container" {
 
 # Private Endpoint for SQL Server
 resource "azurerm_private_endpoint" "sql_pe" {
-  name                = "${var.name_prefix}-sql-pe"
+  name                = join("-", [local.name_prefix, local.instance_id, "sql", "pe"])
   location            = var.location
   resource_group_name = var.resource_group_name
   subnet_id           = var.private_endpoint_subnet_id
   tags                = var.tags
 
   private_service_connection {
-    name                           = "${var.name_prefix}-sql-psc"
+    name                           = join("-", [local.name_prefix, local.instance_id, "sql", "psc"])
     private_connection_resource_id = azurerm_mssql_server.sql_server.id
     is_manual_connection           = false
     subresource_names              = ["sqlServer"]
@@ -124,7 +129,7 @@ resource "azurerm_private_endpoint" "sql_pe" {
 # Diagnostic Settings
 resource "azurerm_monitor_diagnostic_setting" "sql_diagnostics" {
   count                      = var.log_analytics_workspace_id != null ? 1 : 0
-  name                       = "${var.name_prefix}-sql-diagnostics"
+  name                       = join("-", [local.name_prefix, local.instance_id, "sql", "diag"])
   target_resource_id         = azurerm_mssql_database.sql_db.id
   log_analytics_workspace_id = var.log_analytics_workspace_id
 

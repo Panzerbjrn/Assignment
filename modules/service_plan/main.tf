@@ -1,7 +1,12 @@
 # Service Plan Module
 
+locals {
+  name_prefix = var.name_prefix
+  instance_id = var.instance_id
+}
+
 resource "azurerm_service_plan" "asp" {
-  name                = "${var.name_prefix}-asp"
+  name                = join("-", [local.name_prefix, local.instance_id, "asp"])
   location            = var.location
   resource_group_name = var.resource_group_name
   os_type             = var.os_type
@@ -12,7 +17,7 @@ resource "azurerm_service_plan" "asp" {
 # Autoscale Settings
 resource "azurerm_monitor_autoscale_setting" "autoscale" {
   count               = var.enable_autoscaling ? 1 : 0
-  name                = "${var.name_prefix}-autoscale"
+  name                = join("-", [local.name_prefix, local.instance_id, "asp", "as"])
   resource_group_name = var.resource_group_name
   location            = var.location
   target_resource_id  = azurerm_service_plan.asp.id
@@ -68,4 +73,3 @@ resource "azurerm_monitor_autoscale_setting" "autoscale" {
     }
   }
 }
-

@@ -5,6 +5,12 @@ variable "name_prefix" {
   type        = string
 }
 
+variable "instance_id" {
+  description = "Instance identifier used in resource naming"
+  type        = string
+  default     = "01"
+}
+
 variable "subnet_name" {
   description = "Short name for the subnet (e.g. app, pe, db)"
   type        = string

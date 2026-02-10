@@ -1,8 +1,14 @@
 # Resource Group Module Variables
 
-variable "name" {
-  description = "Name of the resource group"
+variable "name_prefix" {
+  description = "Prefix for naming the resource group"
   type        = string
+}
+
+variable "instance_id" {
+  description = "Instance identifier used in resource naming"
+  type        = string
+  default     = "01"
 }
 
 variable "location" {
@@ -21,4 +27,3 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
-

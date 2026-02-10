@@ -1,7 +1,12 @@
 # App Service Module
 
+locals {
+  name_prefix = var.name_prefix
+  instance_id = var.instance_id
+}
+
 resource "azurerm_linux_web_app" "app" {
-  name                = "${var.name_prefix}-app"
+  name                = join("-", [local.name_prefix, local.instance_id, "app"])
   resource_group_name = var.resource_group_name
   location            = var.location
   service_plan_id     = var.service_plan_id

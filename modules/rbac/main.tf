@@ -1,5 +1,10 @@
 # RBAC Module
 
+locals {
+  name_prefix = var.name_prefix
+  instance_id = var.instance_id
+}
+
 # App Service to Cosmos DB - Data Contributor
 resource "azurerm_role_assignment" "app_to_cosmos" {
   scope                = var.cosmos_account_id
@@ -72,7 +77,7 @@ resource "azurerm_role_assignment" "auditor_logs" {
 
 # Custom Role for Least Privilege Access
 resource "azurerm_role_definition" "app_db_access" {
-  name        = "App-Database-Access-Role"
+  name        = join("-", [local.name_prefix, local.instance_id, "app-db-role"])
   scope       = var.resource_group_id
   description = "Custom role for application database access with least privilege"
 

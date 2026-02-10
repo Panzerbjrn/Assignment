@@ -1,5 +1,10 @@
 # Key Vault Module
 
+locals {
+  name_prefix = var.name_prefix
+  instance_id = var.instance_id
+}
+
 data "azurerm_client_config" "current" {}
 
 # Generate password once and store in Key Vault
@@ -18,7 +23,7 @@ resource "random_password" "secrets" {
 
 # Key Vault
 resource "azurerm_key_vault" "kv" {
-  name                       = "${var.name_prefix}-kv"
+  name                       = join("-", [local.name_prefix, local.instance_id, "kv"])
   location                   = var.location
   resource_group_name        = var.resource_group_name
   tenant_id                  = data.azurerm_client_config.current.tenant_id
@@ -80,13 +85,13 @@ resource "azurerm_key_vault_secret" "static_secrets" {
 # Private Endpoint for Key Vault
 resource "azurerm_private_endpoint" "kv" {
   count               = var.enable_private_endpoint ? 1 : 0
-  name                = "${var.name_prefix}-kv-pe"
+  name                = join("-", [local.name_prefix, local.instance_id, "kv", "pe"])
   location            = var.location
   resource_group_name = var.resource_group_name
   subnet_id           = var.private_endpoint_subnet_id
 
   private_service_connection {
-    name                           = "${var.name_prefix}-kv-psc"
+    name                           = join("-", [local.name_prefix, local.instance_id, "kv", "psc"])
     private_connection_resource_id = azurerm_key_vault.kv.id
     is_manual_connection           = false
     subresource_names              = ["vault"]
@@ -102,4 +107,3 @@ resource "azurerm_private_endpoint" "kv" {
 
   tags = var.tags
 }
-

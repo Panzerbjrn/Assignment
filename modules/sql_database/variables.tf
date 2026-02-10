@@ -5,6 +5,12 @@ variable "name_prefix" {
   type        = string
 }
 
+variable "instance_id" {
+  description = "Instance identifier used in resource naming"
+  type        = string
+  default     = "01"
+}
+
 variable "resource_group_name" {
   description = "Name of the resource group"
   type        = string

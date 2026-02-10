@@ -1,7 +1,12 @@
 # Resource Group Module
 
+locals {
+  name_prefix = var.name_prefix
+  instance_id = var.instance_id
+}
+
 resource "azurerm_resource_group" "rg" {
-  name     = var.name
+  name     = join("-", [local.name_prefix, local.instance_id, "rg"])
   location = var.location
   tags = merge(
     var.tags,
@@ -12,4 +17,3 @@ resource "azurerm_resource_group" "rg" {
     }
   )
 }
-

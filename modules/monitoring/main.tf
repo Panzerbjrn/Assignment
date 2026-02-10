@@ -1,8 +1,13 @@
 # Monitoring Module
 
+locals {
+  name_prefix = var.name_prefix
+  instance_id = var.instance_id
+}
+
 # Log Analytics
 resource "azurerm_log_analytics_workspace" "law" {
-  name                = "${var.name_prefix}-law"
+  name                = join("-", [local.name_prefix, local.instance_id, "law"])
   location            = var.location
   resource_group_name = var.resource_group_name
   sku                 = "PerGB2018"
@@ -38,7 +43,7 @@ resource "azurerm_log_analytics_solution" "security_insights" {
 
 # Action Group for Alerts
 resource "azurerm_monitor_action_group" "alerts" {
-  name                = "${var.name_prefix}-action-group"
+  name                = join("-", [local.name_prefix, local.instance_id, "ag"])
   resource_group_name = var.resource_group_name
   short_name          = "alerts"
   tags                = var.tags
@@ -53,7 +58,7 @@ resource "azurerm_monitor_action_group" "alerts" {
 # Metric Alerts for Service Plan
 resource "azurerm_monitor_metric_alert" "app_service_cpu" {
   count               = var.enable_app_service_alerts ? 1 : 0
-  name                = "${var.name_prefix}-app-cpu-alert"
+  name                = join("-", [local.name_prefix, local.instance_id, "cpu", "ma"])
   resource_group_name = var.resource_group_name
   scopes              = [var.service_plan_id]
   description         = "Alert when CPU usage exceeds threshold"
@@ -77,7 +82,7 @@ resource "azurerm_monitor_metric_alert" "app_service_cpu" {
 
 resource "azurerm_monitor_metric_alert" "app_service_memory" {
   count               = var.enable_app_service_alerts ? 1 : 0
-  name                = "${var.name_prefix}-app-memory-alert"
+  name                = join("-", [local.name_prefix, local.instance_id, "mem", "ma"])
   resource_group_name = var.resource_group_name
   scopes              = [var.service_plan_id]
   description         = "Alert when memory usage exceeds threshold"
@@ -101,7 +106,7 @@ resource "azurerm_monitor_metric_alert" "app_service_memory" {
 
 resource "azurerm_monitor_metric_alert" "app_service_http_errors" {
   count               = var.enable_app_service_alerts ? 1 : 0
-  name                = "${var.name_prefix}-app-http-errors-alert"
+  name                = join("-", [local.name_prefix, local.instance_id, "http5xx", "ma"])
   resource_group_name = var.resource_group_name
   scopes              = [var.app_service_id]
   description         = "Alert on high HTTP 5xx errors"
@@ -125,7 +130,7 @@ resource "azurerm_monitor_metric_alert" "app_service_http_errors" {
 
 # Metric Alerts for SQL Database
 resource "azurerm_monitor_metric_alert" "sql_dtu" {
-  name                = "${var.name_prefix}-sql-dtu-alert"
+  name                = join("-", [local.name_prefix, local.instance_id, "sqldtu", "ma"])
   resource_group_name = var.resource_group_name
   scopes              = [var.sql_database_id]
   description         = "Alert when DTU usage is high"
@@ -148,7 +153,7 @@ resource "azurerm_monitor_metric_alert" "sql_dtu" {
 }
 
 resource "azurerm_monitor_metric_alert" "sql_deadlock" {
-  name                = "${var.name_prefix}-sql-deadlock-alert"
+  name                = join("-", [local.name_prefix, local.instance_id, "sqllock", "ma"])
   resource_group_name = var.resource_group_name
   scopes              = [var.sql_database_id]
   description         = "Alert on database deadlocks"
@@ -172,13 +177,14 @@ resource "azurerm_monitor_metric_alert" "sql_deadlock" {
 
 # Metric Alerts for Cosmos DB
 resource "azurerm_monitor_metric_alert" "cosmos_availability" {
-  name                = "${var.name_prefix}-cosmos-availability-alert"
+  count               = var.enable_cosmos_alerts ? 1 : 0
+  name                = join("-", [local.name_prefix, local.instance_id, "cosmosavail", "ma"])
   resource_group_name = var.resource_group_name
   scopes              = [var.cosmos_account_id]
   description         = "Alert when Cosmos DB availability is low"
   severity            = 0
-  frequency           = "PT1M"
-  window_size         = "PT5M"
+  frequency           = "PT1H"
+  window_size         = "PT1H"
   tags                = var.tags
 
   criteria {
@@ -195,7 +201,8 @@ resource "azurerm_monitor_metric_alert" "cosmos_availability" {
 }
 
 resource "azurerm_monitor_metric_alert" "cosmos_latency" {
-  name                = "${var.name_prefix}-cosmos-latency-alert"
+  count               = var.enable_cosmos_alerts ? 1 : 0
+  name                = join("-", [local.name_prefix, local.instance_id, "cosmoslat", "ma"])
   resource_group_name = var.resource_group_name
   scopes              = [var.cosmos_account_id]
   description         = "Alert on high Cosmos DB latency"
@@ -219,7 +226,7 @@ resource "azurerm_monitor_metric_alert" "cosmos_latency" {
 
 # Activity Log Alert for Security Events
 resource "azurerm_monitor_activity_log_alert" "security_events" {
-  name                = "${var.name_prefix}-security-alert"
+  name                = join("-", [local.name_prefix, local.instance_id, "sec", "ala"])
   resource_group_name = var.resource_group_name
   scopes              = ["/subscriptions/${data.azurerm_client_config.current.subscription_id}"]
   description         = "Alert on security-related configuration changes"

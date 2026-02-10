@@ -2,6 +2,8 @@
 
 # Local variables
 locals {
+  name_prefix = "${var.project_name}-${var.environment}"
+
   common_tags = merge(
     var.tags,
     {
@@ -17,12 +19,16 @@ locals {
   )
 }
 
-# Resource Group Module
+# ========================================
+# Resource Group
+# ========================================
+
 module "resource_group" {
-  source   = "./modules/resource_group"
-  name     = "${var.project_name}-${var.environment}-rg"
-  location = var.location
-  tags     = local.common_tags
+  source      = "./modules/resource_group"
+  name_prefix = local.name_prefix
+  instance_id = "01"
+  location    = var.location
+  tags        = local.common_tags
 }
 
 # ========================================
@@ -32,7 +38,8 @@ module "resource_group" {
 # Virtual Network
 module "vnet" {
   source              = "./modules/vnet"
-  name_prefix         = "${var.project_name}-${var.environment}"
+  name_prefix         = local.name_prefix
+  instance_id         = "01"
   resource_group_name = module.resource_group.name
   location            = module.resource_group.location
   vnet_address_space  = var.vnet_address_space
@@ -45,14 +52,15 @@ module "vnet" {
 # Subnets
 # ========================================
 
-# App Service Subnet
+# App Service Subnet (with delegation for Web/serverFarms)
 module "subnet_app" {
   source               = "./modules/subnet"
-  name_prefix          = "${var.project_name}-${var.environment}"
+  name_prefix          = local.name_prefix
+  instance_id          = "01"
   subnet_name          = "app"
   resource_group_name  = module.resource_group.name
   virtual_network_name = module.vnet.vnet_name
-  address_prefixes     = [cidrsubnet(var.vnet_address_space[0], 8, 1)]
+  address_prefixes     = [var.subnet_app_address_prefix]
 
   delegation = {
     name         = "app-service-delegation"
@@ -66,11 +74,12 @@ module "subnet_app" {
 # Private Endpoint Subnet
 module "subnet_pe" {
   source               = "./modules/subnet"
-  name_prefix          = "${var.project_name}-${var.environment}"
+  name_prefix          = local.name_prefix
+  instance_id          = "01"
   subnet_name          = "pe"
   resource_group_name  = module.resource_group.name
   virtual_network_name = module.vnet.vnet_name
-  address_prefixes     = [cidrsubnet(var.vnet_address_space[0], 8, 2)]
+  address_prefixes     = [var.subnet_pe_address_prefix]
 
   depends_on = [module.vnet]
 }
@@ -78,12 +87,13 @@ module "subnet_pe" {
 # Database Subnet
 module "subnet_db" {
   source               = "./modules/subnet"
-  name_prefix          = "${var.project_name}-${var.environment}"
+  name_prefix          = local.name_prefix
+  instance_id          = "01"
   subnet_name          = "db"
   resource_group_name  = module.resource_group.name
   virtual_network_name = module.vnet.vnet_name
-  address_prefixes     = [cidrsubnet(var.vnet_address_space[0], 8, 3)]
-  service_endpoints    = ["Microsoft.Sql", "Microsoft.AzureCosmosDB"]
+  address_prefixes     = [var.subnet_db_address_prefix]
+  service_endpoints    = var.subnet_db_service_endpoints
 
   depends_on = [module.vnet]
 }
@@ -95,49 +105,15 @@ module "subnet_db" {
 # NSG for App Service Subnet
 module "nsg_app" {
   source              = "./modules/nsg"
-  name_prefix         = "${var.project_name}-${var.environment}"
+  name_prefix         = local.name_prefix
+  instance_id         = "01"
   nsg_name            = "app"
   resource_group_name = module.resource_group.name
   location            = module.resource_group.location
   associate_subnet    = true
   subnet_id           = module.subnet_app.subnet_id
+  security_rules      = var.nsg_app_rules
   tags                = local.common_tags
-
-  security_rules = [
-    {
-      name                       = "Allow-HTTPS-Inbound"
-      priority                   = 100
-      direction                  = "Inbound"
-      access                     = "Allow"
-      protocol                   = "Tcp"
-      source_port_range          = "*"
-      destination_port_range     = "443"
-      source_address_prefix      = "*"
-      destination_address_prefix = "*"
-    },
-    {
-      name                       = "Allow-HTTP-Inbound"
-      priority                   = 110
-      direction                  = "Inbound"
-      access                     = "Allow"
-      protocol                   = "Tcp"
-      source_port_range          = "*"
-      destination_port_range     = "80"
-      source_address_prefix      = "*"
-      destination_address_prefix = "*"
-    },
-    {
-      name                       = "Deny-All-Inbound"
-      priority                   = 4096
-      direction                  = "Inbound"
-      access                     = "Deny"
-      protocol                   = "*"
-      source_port_range          = "*"
-      destination_port_range     = "*"
-      source_address_prefix      = "*"
-      destination_address_prefix = "*"
-    }
-  ]
 
   depends_on = [module.subnet_app]
 }
@@ -145,49 +121,15 @@ module "nsg_app" {
 # NSG for Database Subnet
 module "nsg_db" {
   source              = "./modules/nsg"
-  name_prefix         = "${var.project_name}-${var.environment}"
+  name_prefix         = local.name_prefix
+  instance_id         = "01"
   nsg_name            = "db"
   resource_group_name = module.resource_group.name
   location            = module.resource_group.location
   associate_subnet    = true
   subnet_id           = module.subnet_db.subnet_id
+  security_rules      = var.nsg_db_rules
   tags                = local.common_tags
-
-  security_rules = [
-    {
-      name                       = "Allow-App-Subnet-SQL"
-      priority                   = 100
-      direction                  = "Inbound"
-      access                     = "Allow"
-      protocol                   = "Tcp"
-      source_port_range          = "*"
-      destination_port_range     = "1433"
-      source_address_prefix      = cidrsubnet(var.vnet_address_space[0], 8, 1)
-      destination_address_prefix = "*"
-    },
-    {
-      name                       = "Allow-App-Subnet-Cosmos"
-      priority                   = 110
-      direction                  = "Inbound"
-      access                     = "Allow"
-      protocol                   = "Tcp"
-      source_port_range          = "*"
-      destination_port_range     = "443"
-      source_address_prefix      = cidrsubnet(var.vnet_address_space[0], 8, 1)
-      destination_address_prefix = "*"
-    },
-    {
-      name                       = "Deny-All-Inbound"
-      priority                   = 4096
-      direction                  = "Inbound"
-      access                     = "Deny"
-      protocol                   = "*"
-      source_port_range          = "*"
-      destination_port_range     = "*"
-      source_address_prefix      = "*"
-      destination_address_prefix = "*"
-    }
-  ]
 
   depends_on = [module.subnet_db]
 }
@@ -199,7 +141,8 @@ module "nsg_db" {
 # SQL Private DNS Zone
 module "dns_zone_sql" {
   source              = "./modules/dns_zone"
-  name_prefix         = "${var.project_name}-${var.environment}"
+  name_prefix         = local.name_prefix
+  instance_id         = "01"
   resource_group_name = module.resource_group.name
   dns_zone_name       = "privatelink.database.windows.net"
   virtual_network_id  = module.vnet.vnet_id
@@ -212,7 +155,8 @@ module "dns_zone_sql" {
 # Cosmos DB Private DNS Zone
 module "dns_zone_cosmos" {
   source              = "./modules/dns_zone"
-  name_prefix         = "${var.project_name}-${var.environment}"
+  name_prefix         = local.name_prefix
+  instance_id         = "01"
   resource_group_name = module.resource_group.name
   dns_zone_name       = "privatelink.documents.azure.com"
   virtual_network_id  = module.vnet.vnet_id
@@ -225,7 +169,8 @@ module "dns_zone_cosmos" {
 # Key Vault Private DNS Zone
 module "dns_zone_keyvault" {
   source              = "./modules/dns_zone"
-  name_prefix         = "${var.project_name}-${var.environment}"
+  name_prefix         = local.name_prefix
+  instance_id         = "01"
   resource_group_name = module.resource_group.name
   dns_zone_name       = "privatelink.vaultcore.azure.net"
   virtual_network_id  = module.vnet.vnet_id
@@ -235,10 +180,14 @@ module "dns_zone_keyvault" {
   depends_on = [module.vnet]
 }
 
-# Key Vault Module for Secrets Management
+# ========================================
+# Key Vault
+# ========================================
+
 module "key_vault" {
   source                        = "./modules/key_vault"
-  name_prefix                   = "${var.project_name}-${var.environment}-03"
+  name_prefix                   = local.name_prefix
+  instance_id                   = "05"
   resource_group_name           = module.resource_group.name
   location                      = module.resource_group.location
   enable_private_endpoint       = true
@@ -264,11 +213,14 @@ module "key_vault" {
   depends_on = [module.vnet, module.subnet_pe, module.dns_zone_keyvault]
 }
 
+# ========================================
+# Service Plan
+# ========================================
 
-# Service Plan Module - COMMENTED OUT (No App Service quota in subscription)
 module "service_plan" {
   source              = "./modules/service_plan"
-  name_prefix         = "${var.project_name}-${var.environment}"
+  name_prefix         = local.name_prefix
+  instance_id         = "01"
   resource_group_name = module.resource_group.name
   location            = "ukwest"
   os_type             = "Linux"
@@ -281,10 +233,14 @@ module "service_plan" {
   depends_on = [module.resource_group]
 }
 
-# Logging Module - COMMENTED OUT (No App Service quota in subscription)
+# ========================================
+# Logging
+# ========================================
+
 module "logging" {
   source                     = "./modules/logging"
-  name_prefix                = "${var.project_name}-${var.environment}"
+  name_prefix                = local.name_prefix
+  instance_id                = "01"
   resource_group_name        = module.resource_group.name
   location                   = module.resource_group.location
   application_type           = "web"
@@ -295,10 +251,14 @@ module "logging" {
   depends_on = [module.resource_group]
 }
 
-# App Service Module - COMMENTED OUT (No App Service quota in subscription)
+# ========================================
+# App Service
+# ========================================
+
 module "app_service" {
   source              = "./modules/app_service"
-  name_prefix         = "${var.project_name}-${var.environment}"
+  name_prefix         = local.name_prefix
+  instance_id         = "01"
   resource_group_name = module.resource_group.name
   location            = "ukwest"
   service_plan_id     = module.service_plan.service_plan_id
@@ -315,10 +275,14 @@ module "app_service" {
   depends_on = [module.vnet, module.service_plan]
 }
 
-# SQL Database Module
+# ========================================
+# SQL Database
+# ========================================
+
 module "sql_database" {
   source                     = "./modules/sql_database"
-  name_prefix                = "${var.project_name}-${var.environment}"
+  name_prefix                = local.name_prefix
+  instance_id                = "01"
   resource_group_name        = module.resource_group.name
   location                   = module.resource_group.location
   private_endpoint_subnet_id = module.subnet_pe.subnet_id
@@ -335,10 +299,14 @@ module "sql_database" {
   depends_on = [module.vnet, module.subnet_pe, module.dns_zone_sql, module.key_vault]
 }
 
-# Cosmos DB Module
+# ========================================
+# Cosmos DB
+# ========================================
+
 module "cosmos_db" {
   source                     = "./modules/cosmos_db"
-  name_prefix                = "${var.project_name}-${var.environment}"
+  name_prefix                = local.name_prefix
+  instance_id                = "01"
   resource_group_name        = module.resource_group.name
   location                   = module.resource_group.location
   private_endpoint_subnet_id = module.subnet_pe.subnet_id
@@ -353,60 +321,71 @@ module "cosmos_db" {
   depends_on = [module.vnet, module.subnet_pe, module.dns_zone_cosmos]
 }
 
-# Monitoring Module - App Service monitoring disabled
+# ========================================
+# Monitoring
+# ========================================
+
 module "monitoring" {
   source                    = "./modules/monitoring"
-  name_prefix               = "${var.project_name}-${var.environment}"
+  name_prefix               = local.name_prefix
+  instance_id               = "01"
   resource_group_name       = module.resource_group.name
   location                  = module.resource_group.location
   enable_app_service_alerts = true
   app_service_id            = module.app_service.app_service_id
   service_plan_id           = module.service_plan.service_plan_id
   sql_database_id           = module.sql_database.sql_database_id
-  # cosmos_account_id = module.cosmos_db.cosmos_account_id
-  alert_email = var.alert_email
-  tags        = local.common_tags
+  enable_cosmos_alerts      = true
+  cosmos_account_id         = module.cosmos_db.cosmos_account_id
+  alert_email               = var.alert_email
+  tags                      = local.common_tags
 
   depends_on = [
     module.app_service,
     module.service_plan,
-    module.sql_database
-    #    module.cosmos_db
+    module.sql_database,
+    module.cosmos_db
   ]
 }
 
-# # Update modules to use Log Analytics
-# resource "null_resource" "update_diagnostics" {
-#   depends_on = [
-#     module.monitoring,
-#     # module.app_service,  # COMMENTED OUT
-#     module.sql_database,
-#     module.cosmos_db
-#   ]
+# ========================================
+# Azure AD - Test Groups and Users (requires Azure AD domain)
+# ========================================
+
+# module "azure_ad" {
+#   source            = "./modules/azure_ad"
+#   name_prefix       = local.name_prefix
+#   instance_id       = "01"
+#   environment       = var.environment
+#   domain_name       = var.azure_ad_domain_name
+#   create_test_users = var.create_test_users
 # }
 
-# # RBAC Module - App Service RBAC disabled
+# ========================================
+# RBAC (requires Azure AD groups)
+# ========================================
+
 # module "rbac" {
 #   source                            = "./modules/rbac"
+#   name_prefix                       = local.name_prefix
+#   instance_id                       = "01"
 #   resource_group_id                 = module.resource_group.id
-#   # app_service_id                    = module.app_service.app_service_id  # COMMENTED OUT
-#   app_service_id = "/subscriptions/dummy/resourceGroups/dummy/providers/Microsoft.Web/sites/dummy"  # Dummy value
-#   sql_server_id  = module.sql_database.sql_server_id
-#   cosmos_account_id = module.cosmos_db.cosmos_account_id
-#   # app_service_identity_principal_id = module.app_service.app_service_identity_principal_id  # COMMENTED OUT
-#   app_service_identity_principal_id = "00000000-0000-0000-0000-000000000000"  # Dummy value
+#   app_service_id                    = module.app_service.app_service_id
+#   sql_server_id                     = module.sql_database.sql_server_id
+#   cosmos_account_id                 = module.cosmos_db.cosmos_account_id
+#   app_service_identity_principal_id = module.app_service.app_service_identity_principal_id
 #   sql_server_identity_principal_id  = module.sql_database.sql_server_identity_principal_id
 #   cosmos_identity_principal_id      = module.cosmos_db.cosmos_identity_principal_id
-#   developer_group_id                = var.developer_group_id
-#   dba_group_id                      = var.dba_group_id
-#   operations_group_id               = var.operations_group_id
-#   auditor_group_id                  = var.auditor_group_id
-
+#   developer_group_id                = module.azure_ad.developer_group_id
+#   dba_group_id                      = module.azure_ad.dba_group_id
+#   operations_group_id               = module.azure_ad.operations_group_id
+#   auditor_group_id                  = module.azure_ad.auditor_group_id
+#
 #   depends_on = [
 #     module.resource_group,
-#     # module.app_service,  # COMMENTED OUT
+#     module.app_service,
 #     module.sql_database,
-#     module.cosmos_db
+#     module.cosmos_db,
+#     module.azure_ad
 #   ]
 # }
-

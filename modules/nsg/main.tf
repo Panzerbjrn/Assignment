@@ -1,7 +1,13 @@
 # Network Security Group Module
 
+locals {
+  name_prefix = var.name_prefix
+  instance_id = var.instance_id
+  nsg_name    = var.nsg_name
+}
+
 resource "azurerm_network_security_group" "this" {
-  name                = "${var.name_prefix}-${var.nsg_name}-nsg"
+  name                = join("-", [local.name_prefix, local.instance_id, local.nsg_name, "nsg"])
   location            = var.location
   resource_group_name = var.resource_group_name
   tags                = var.tags
@@ -28,4 +34,3 @@ resource "azurerm_subnet_network_security_group_association" "this" {
   subnet_id                 = var.subnet_id
   network_security_group_id = azurerm_network_security_group.this.id
 }
-

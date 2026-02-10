@@ -1,5 +1,16 @@
 # RBAC Module Variables
 
+variable "name_prefix" {
+  description = "Prefix for naming resources"
+  type        = string
+}
+
+variable "instance_id" {
+  description = "Instance identifier used in resource naming"
+  type        = string
+  default     = "01"
+}
+
 variable "resource_group_id" {
   description = "Resource Group ID for RBAC assignment"
   type        = string

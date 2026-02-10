@@ -1,7 +1,12 @@
 # Cosmos DB Module
 
+locals {
+  name_prefix = var.name_prefix
+  instance_id = var.instance_id
+}
+
 resource "azurerm_cosmosdb_account" "cosmos" {
-  name                              = "${var.name_prefix}-cosmos"
+  name                              = join("-", [local.name_prefix, local.instance_id, "cosmos"])
   location                          = var.location
   resource_group_name               = var.resource_group_name
   offer_type                        = "Standard"
@@ -25,7 +30,7 @@ resource "azurerm_cosmosdb_account" "cosmos" {
     zone_redundant    = false # Serverless doesn't support zone redundancy
   }
 
-    backup {
+  backup {
     type                = "Periodic"
     interval_in_minutes = var.backup_interval_minutes
     retention_in_hours  = var.backup_retention_hours
@@ -49,7 +54,7 @@ resource "azurerm_cosmosdb_account" "cosmos" {
 
 # Cosmos DB SQL Database
 resource "azurerm_cosmosdb_sql_database" "db" {
-  name                = "${var.name_prefix}-cosmosdb"
+  name                = join("-", [local.name_prefix, local.instance_id, "cosmosdb"])
   resource_group_name = var.resource_group_name
   account_name        = azurerm_cosmosdb_account.cosmos.name
 }
@@ -75,14 +80,14 @@ resource "azurerm_cosmosdb_sql_container" "container" {
 
 # Private Endpoint for Cosmos DB
 resource "azurerm_private_endpoint" "cosmos_pe" {
-  name                = "${var.name_prefix}-cosmos-pe"
+  name                = join("-", [local.name_prefix, local.instance_id, "cosmos", "pe"])
   location            = var.location
   resource_group_name = var.resource_group_name
   subnet_id           = var.private_endpoint_subnet_id
   tags                = var.tags
 
   private_service_connection {
-    name                           = "${var.name_prefix}-cosmos-psc"
+    name                           = join("-", [local.name_prefix, local.instance_id, "cosmos", "psc"])
     private_connection_resource_id = azurerm_cosmosdb_account.cosmos.id
     is_manual_connection           = false
     subresource_names              = ["Sql"]
@@ -96,7 +101,7 @@ resource "azurerm_private_endpoint" "cosmos_pe" {
 
 resource "azurerm_monitor_diagnostic_setting" "cosmos_diagnostics" {
   count                      = var.log_analytics_workspace_id != null ? 1 : 0
-  name                       = "${var.name_prefix}-cosmos-diagnostics"
+  name                       = join("-", [local.name_prefix, local.instance_id, "cosmos", "diag"])
   target_resource_id         = azurerm_cosmosdb_account.cosmos.id
   log_analytics_workspace_id = var.log_analytics_workspace_id
 
@@ -124,4 +129,3 @@ resource "azurerm_monitor_diagnostic_setting" "cosmos_diagnostics" {
     category = "Requests"
   }
 }
-
